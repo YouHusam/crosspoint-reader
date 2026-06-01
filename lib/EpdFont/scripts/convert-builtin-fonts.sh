@@ -8,6 +8,17 @@ READER_FONT_STYLES=("Regular" "Italic" "Bold" "BoldItalic")
 NOTOSERIF_FONT_SIZES=(12 14 16 18)
 NOTOSANS_FONT_SIZES=(12 14 16 18)
 
+reader_fallback_weight() {
+  case "$1" in
+    Bold|BoldItalic)
+      echo "Bold"
+      ;;
+    *)
+      echo "Regular"
+      ;;
+  esac
+}
+
 for size in ${NOTOSERIF_FONT_SIZES[@]}; do
   for style in ${READER_FONT_STYLES[@]}; do
     font_name="notoserif_${size}_$(echo $style | tr '[:upper:]' '[:lower:]')"
@@ -23,7 +34,19 @@ for size in ${NOTOSANS_FONT_SIZES[@]}; do
     font_name="notosans_${size}_$(echo $style | tr '[:upper:]' '[:lower:]')"
     font_path="../builtinFonts/source/NotoSans/NotoSans-${style}.ttf"
     output_path="../builtinFonts/${font_name}.h"
-    python fontconvert.py $font_name $size $font_path --2bit --compress --pnum > $output_path
+    if [[ "$style" == "Regular" || "$style" == "Bold" ]]; then
+      fallback_weight=$(reader_fallback_weight "$style")
+      python fontconvert.py $font_name $size $font_path \
+        ../builtinFonts/source/NotoSansHebrew/NotoSansHebrew-${fallback_weight}.ttf \
+        ../builtinFonts/source/NotoSansArabic/NotoSansArabic-${fallback_weight}.ttf \
+        --additional-intervals 0x05D0,0x05EA \
+        --additional-intervals 0x0600,0x06FF \
+        --additional-intervals 0xFB50,0xFB50 \
+        --additional-intervals 0xFE70,0xFEFC \
+        --2bit --compress --pnum > $output_path
+    else
+      python fontconvert.py $font_name $size $font_path --2bit --compress --pnum > $output_path
+    fi
     echo "Generated $output_path"
   done
 done
@@ -44,7 +67,12 @@ for size in ${UI_FONT_SIZES[@]}; do
     output_path="../builtinFonts/${font_name}.h"
     python fontconvert.py $font_name $size $font_path $hebrew_path $arabic_path $viet_path \
       --additional-intervals 0x05D0,0x05EA \
-      --additional-intervals 0x0600,0x06FF \
+      --additional-intervals 0x060C,0x060C \
+      --additional-intervals 0x061F,0x061F \
+      --additional-intervals 0x0621,0x064A \
+      --additional-intervals 0x0660,0x0669 \
+      --additional-intervals 0x0671,0x0671 \
+      --additional-intervals 0xFB50,0xFB50 \
       --additional-intervals 0xFE70,0xFEFC > $output_path
     echo "Generated $output_path"
   done
@@ -55,9 +83,14 @@ python fontconvert.py notosans_8_regular 8 \
   ../builtinFonts/source/NotoSansHebrew/NotoSansHebrew-Regular.ttf \
   ../builtinFonts/source/NotoSansArabic/NotoSansArabic-Regular.ttf \
   --additional-intervals 0x05D0,0x05EA \
-  --additional-intervals 0x0600,0x06FF \
+  --additional-intervals 0x060C,0x060C \
+  --additional-intervals 0x061F,0x061F \
+  --additional-intervals 0x0621,0x064A \
+  --additional-intervals 0x0660,0x0669 \
+  --additional-intervals 0x0671,0x0671 \
   --additional-intervals 0xFB50,0xFB50 \
   --additional-intervals 0xFE70,0xFEFC > ../builtinFonts/notosans_8_regular.h
+echo "Generated ../builtinFonts/notosans_8_regular.h"
 
 echo ""
 echo "Running compression verification..."
